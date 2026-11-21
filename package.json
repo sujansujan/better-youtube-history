@@ -1,0 +1,11 @@
+{
+  "name": "better-youtube-history",
+  "version": "2.0.0",
+  "description": "Fast, private, local YouTube watch history browser extension for Chrome and Firefox.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node tests/run-tests.mjs"
+  }
+}

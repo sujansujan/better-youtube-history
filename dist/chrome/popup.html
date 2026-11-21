@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better YouTube History</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-title-group">
+                    <h1>Watch History</h1>
+                    <span id="history-count" class="count-pill" aria-live="polite">0</span>
+                </div>
+
+                <div class="view-tabs" role="tablist" aria-label="View mode">
+                    <button id="tab-history" class="view-tab active" type="button" role="tab" aria-selected="true">History</button>
+                    <button id="tab-stats" class="view-tab" type="button" role="tab" aria-selected="false">Stats</button>
+                </div>
+
+                <div class="header-actions">
+                    <button id="select-mode-btn" class="action-btn" type="button" title="Select Multiple Videos" aria-label="Select Multiple Videos" aria-pressed="false">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="9 11 12 14 22 4"></polyline>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                    </button>
+                    <button id="expand-btn" class="action-btn" type="button" title="Open Full-Page View" aria-label="Open Full-Page View">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </button>
+                    <button id="import-btn" class="action-btn" type="button" title="Import History or Google Takeout (watch-history.json)" aria-label="Import History">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </button>
+                    <button id="export-btn" class="action-btn" type="button" title="Export History (JSON)" aria-label="Export History">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                    <button id="clear-btn" class="action-btn clear-btn" type="button" title="Clear All History" aria-label="Clear All History">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
+                    <input type="file" id="import-file-input" accept=".json,application/json" hidden />
+                </div>
+            </div>
+
+            <!-- Inline Clear Confirmation Banner -->
+            <div id="confirm-banner" class="confirm-banner" hidden role="alertdialog" aria-label="Confirm clear history">
+                <span>Clear all watch history?</span>
+                <div class="confirm-actions">
+                    <button id="confirm-cancel-btn" class="btn-secondary" type="button">Cancel</button>
+                    <button id="confirm-clear-btn" class="btn-danger" type="button">Clear All</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- History Controls Bar -->
+        <div id="controls-bar" class="controls-bar">
+            <div class="controls-row">
+                <div class="search-container">
+                    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search videos or channels... (/)" autocomplete="off" spellcheck="false" aria-label="Search history" />
+                    <button id="search-clear-btn" class="search-clear-btn" type="button" hidden aria-label="Clear search">&times;</button>
+                </div>
+                <select id="sort-select" class="sort-select" aria-label="Sort order">
+                    <option value="recent">Recent</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="longest">Longest</option>
+                </select>
+            </div>
+
+            <div class="filters-row">
+                <div class="filter-pills" role="tablist" aria-label="Watch status filter">
+                    <button class="filter-pill active" data-filter="all" type="button" role="tab" aria-selected="true">All</button>
+                    <button class="filter-pill" data-filter="in_progress" type="button" role="tab" aria-selected="false">In Progress</button>
+                    <button class="filter-pill" data-filter="watched" type="button" role="tab" aria-selected="false">Watched</button>
+                </div>
+
+                <div class="date-pills" role="tablist" aria-label="Date range filter">
+                    <button class="date-pill active" data-range="all" type="button" role="tab" aria-selected="true">All</button>
+                    <button class="date-pill" data-range="today" type="button" role="tab" aria-selected="false">Today</button>
+                    <button class="date-pill" data-range="7d" type="button" role="tab" aria-selected="false">7d</button>
+                    <button class="date-pill" data-range="30d" type="button" role="tab" aria-selected="false">30d</button>
+                </div>
+            </div>
+
+            <!-- Active Channel Filter Chip -->
+            <div id="channel-chip-bar" class="channel-chip-bar" hidden>
+                <span class="channel-chip">
+                    <span class="channel-chip-prefix">Channel:</span>
+                    <strong id="channel-chip-name"></strong>
+                    <button id="channel-chip-clear" type="button" aria-label="Clear channel filter">&times;</button>
+                </span>
+            </div>
+
+            <!-- Bulk Selection Action Bar -->
+            <div id="bulk-bar" class="bulk-bar" hidden>
+                <span id="bulk-count" class="bulk-count">0 selected</span>
+                <div class="bulk-actions">
+                    <button id="bulk-select-all-btn" class="btn-secondary" type="button">Select Loaded</button>
+                    <button id="bulk-clear-sel-btn" class="btn-secondary" type="button">Clear</button>
+                    <button id="bulk-delete-btn" class="btn-danger" type="button" disabled>Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Virtual Scroll Viewport -->
+        <main class="history-viewport" id="history-viewport">
+            <div class="loading-state" id="loading-state">
+                <div class="spinner"></div>
+            </div>
+
+            <div class="empty-state" id="empty-state" hidden>
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <p id="empty-title">No history yet</p>
+                <span id="empty-subtitle">Watch YouTube videos or import Google Takeout JSON to get started.</span>
+            </div>
+
+            <div class="virtual-spacer" id="virtual-spacer" hidden>
+                <div class="virtual-items" id="virtual-items"></div>
+            </div>
+        </main>
+
+        <!-- Watch Stats & Top Channels Dashboard -->
+        <section class="stats-view" id="stats-view" hidden aria-label="Watch statistics">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Watch Time</span>
+                    <strong class="stat-value" id="stat-total-time">0m</strong>
+                    <span class="stat-sub" id="stat-today-sub">Today: 0m</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Videos Tracked</span>
+                    <strong class="stat-value" id="stat-total-videos">0</strong>
+                    <span class="stat-sub" id="stat-channels-sub">0 channels</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Completion Rate</span>
+                    <strong class="stat-value" id="stat-completion-rate">0%</strong>
+                    <span class="stat-sub" id="stat-completed-sub">0 completed</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Last 7 Days</span>
+                    <strong class="stat-value" id="stat-week-videos">0</strong>
+                    <span class="stat-sub" id="stat-week-time">0m watched</span>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stats-panel-header">
+                    <h2>7-Day Activity</h2>
+                    <span class="stats-hint">Videos watched per day</span>
+                </div>
+                <div class="activity-chart" id="activity-chart"></div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stats-panel-header">
+                    <h2>Top Channels</h2>
+                    <span class="stats-hint">Click a channel to filter</span>
+                </div>
+                <div class="top-channels-list" id="top-channels-list"></div>
+            </div>
+        </section>
+
+        <!-- Non-blocking Toast Notification -->
+        <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- Template for a recycled history row -->
+    <template id="history-item-template">
+        <div class="history-item">
+            <label class="select-checkbox-wrap" hidden>
+                <input type="checkbox" class="item-checkbox" aria-label="Select video" />
+                <span class="checkbox-box"></span>
+            </label>
+            <a href="#" class="thumbnail thumbnail-link" target="_blank" rel="noopener noreferrer" title="Watch from start">
+                <img class="thumb-img" src="" alt="" loading="lazy" decoding="async" />
+                <div class="thumb-progress-track">
+                    <div class="thumb-progress-fill"></div>
+                </div>
+                <div class="duration-badge"></div>
+                <div class="watched-overlay" hidden>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Watched</span>
+                </div>
+            </a>
+            <div class="details">
+                <div class="details-top">
+                    <a href="#" class="video-title-link" target="_blank" rel="noopener noreferrer">
+                        <h2 class="video-title"></h2>
+                    </a>
+                    <button class="delete-item-btn" type="button" title="Remove from history" aria-label="Remove from history">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="video-meta">
+                    <button class="channel-name" type="button" title="Filter by this channel"></button>
+                    <span class="dot-separator">&bull;</span>
+                    <span class="time-ago"></span>
+                </div>
+                <div class="history-actions">
+                    <a href="#" class="resume-btn" target="_blank" rel="noopener noreferrer">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span class="resume-label">Resume</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script type="module" src="popup.js"></script>
+</body>
+
+</html>
