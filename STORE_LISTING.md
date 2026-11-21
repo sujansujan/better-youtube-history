@@ -29,6 +29,6 @@ Take full control of your YouTube watch history — stored 100% locally on your 
 ## Publishing to Firefox Add-ons (AMO — Free)
 1. Open the [Firefox Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/distribution).
 2. Choose **On this site** (public listing) and upload `dist/better-youtube-history-firefox-v2.0.0.zip`.
-3. Add-on ID is configured in `manifests/manifest.firefox.json` as `better-youtube-history@sujansujan.github.io` with `data_collection_permissions: { required: ["none"] }`.
+3. Add-on ID is configured in `manifests/manifest.firefox.json` as `better-yt-history@example.com` with `data_collection_permissions: { required: ["none"] }`.
 4. Since all source code is clean, readable, and unminified, select **No** when asked if the extension uses minified/transpiled code.
 5. Paste the description above, copy the Privacy Policy from `PRIVACY.md`, and submit!

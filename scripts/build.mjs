@@ -125,7 +125,21 @@ function buildTarget(target) {
     const zipPath = path.join(DIST_DIR, zipName);
     fs.rmSync(zipPath, { force: true });
 
-    execFileSync('zip', ['-r', '-q', zipPath, '.'], { cwd: targetDir });
+    execFileSync('zip', ['-r', '-q', zipPath, '.', '-x', '*.DS_Store', '__MACOSX/*'], { cwd: targetDir });
+
+    // Verify manifest.json is strictly at the archive root (no wrapper directory)
+    const zipBuf = fs.readFileSync(zipPath);
+    let foundRootManifest = false;
+    let idx = 0;
+    while ((idx = zipBuf.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]), idx)) !== -1) {
+        const nameLen = zipBuf.readUInt16LE(idx + 28);
+        const name = zipBuf.subarray(idx + 46, idx + 46 + nameLen).toString('utf8');
+        if (name === 'manifest.json') foundRootManifest = true;
+        idx += 46 + nameLen;
+    }
+    if (!foundRootManifest) {
+        throw new Error(`Archive ${zipName} does not contain manifest.json at root!`);
+    }
 
     const sizeKB = (fs.statSync(zipPath).size / 1024).toFixed(1);
     console.log(`Built ${target}: dist/${zipName} (${sizeKB} KB)`);
